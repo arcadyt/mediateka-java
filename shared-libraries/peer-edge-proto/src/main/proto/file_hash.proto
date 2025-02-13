@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package com.acowg.peer_edge_proto;
+
+service FileHashService {
+  // Edge requests hash calculation for a file
+  rpc CalculateHash(stream FileHashRequest) returns (stream FileHashResponse);
+}
+
+message FileHashRequest {
+  string catalog_uuid = 1;
+  enum HashType {
+    MD5 = 0;
+    SHA1 = 1;
+    SHA256 = 2;
+  }
+  HashType hash_type = 2;
+}
+
+message FileHashResponse {
+  string catalog_uuid = 1;
+  FileHashRequest.HashType hash_type = 2;
+  string hash_value = 3;
+}

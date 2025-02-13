@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package com.acowg.peer_edge_proto;
+
+service FileOfferService {
+  // Peer offers a file to the Edge
+  rpc OfferFile(stream FileOfferRequest) returns (stream FileOfferResponse);
+}
+
+message FileOfferRequest {
+  string luid = 1;
+  string relative_path = 2;
+  int64 size_bytes = 3;
+}
+
+message FileOfferResponse {
+  string luid = 1;
+  string catalog_uuid = 2;
+}

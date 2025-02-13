@@ -14,12 +14,12 @@
     <modules>
         <module>catalog-service</module>
         <module>metadata-service</module>
-        <module>thumbnail-service</module>
         <module>edge-service</module>
         <module>peer-service</module>
         <module>discovery-service</module>
         <module>shared-libraries/utils</module>
         <module>shared-libraries/models</module>
+        <module>shared-libraries/peer-edge-proto</module>
     </modules>
 
     <properties>
@@ -57,6 +57,12 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-data-jpa</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-actuator</artifactId>
                 <version>${spring-boot.version}</version>
             </dependency>
 
