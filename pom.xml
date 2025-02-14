@@ -19,7 +19,7 @@
         <module>discovery-service</module>
         <module>shared-libraries/utils</module>
         <module>shared-libraries/models</module>
-        <module>shared-libraries/peer-edge-proto</module>
+        <module>proto/peer-edge</module>
     </modules>
 
     <properties>

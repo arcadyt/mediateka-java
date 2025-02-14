@@ -56,7 +56,7 @@
 
         <dependency>
             <groupId>com.acowg</groupId>
-            <artifactId>peer-edge-proto</artifactId>
+            <artifactId>peer-edge</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>

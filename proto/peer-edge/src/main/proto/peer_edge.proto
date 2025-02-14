@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package com.acowg.proto.peer_edge;
+
+import "google/protobuf/empty.proto";
+
+service PeerEdgeService {
+  // Peer registers itself with Edge
+  rpc RegisterPeer(stream PeerRegistrationRequest) returns (stream PeerRegistrationResponse);
+
+  // Edge requests deletion of a file by catalog UUID
+  rpc DeleteFile(FileDeleteRequest) returns (FileDeleteResponse);
+
+  // Edge requests hash calculation
+  rpc RequestHashCalculation(FileHashRequest) returns (google.protobuf.Empty);
+
+  // Peer sends hash results later
+  rpc SendHashResult(FileHashResponse) returns (google.protobuf.Empty);
+
+  // Peer offers a file to the Edge
+  rpc OfferFile(stream FileOfferRequest) returns (stream FileOfferResponse);
+
+  // Edge requests remapping of a catalog UUID
+  rpc RemapFile(FileRemapRequest) returns (FileRemapResponse);
+
+  // Edge requests screenshots
+  rpc RequestScreenshotCapture(ScreenshotCaptureRequest) returns (google.protobuf.Empty);
+
+  // Peer sends screenshots later
+  rpc SendScreenshots(stream ScreenshotCaptureResponse) returns (google.protobuf.Empty);
+}
+
+message PeerRegistrationRequest {
+  string peer_name = 1;
+}
+
+message PeerRegistrationResponse {
+  string peer_name = 1;
+  string edge_name = 2;
+  bool success = 3;
+}
+
+message FileDeleteRequest {
+  string catalog_uuid = 1;
+}
+
+message FileDeleteResponse {
+  string catalog_uuid = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message FileHashRequest {
+  string catalog_uuid = 1;
+  repeated string hash_types = 2; // MD5, SHA1, SHA256, etc.
+}
+
+message FileHashResponse {
+  string catalog_uuid = 1;
+  map<string, string> hashes = 2;
+  string error_message = 3;
+}
+
+message FileOfferRequest {
+  string peer_luid = 1;
+  string relative_path = 2;
+  int64 size_bytes = 3;
+}
+
+message FileOfferResponse {
+  string peer_luid = 1;
+  string catalog_uuid = 2;
+}
+
+message FileRemapRequest {
+  string old_catalog_uuid = 1;
+  string new_catalog_uuid = 2;
+}
+
+message FileRemapResponse {
+  string new_catalog_uuid = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+message ScreenshotCaptureRequest {
+  string catalog_uuid = 1;
+  int32 quantity = 2;
+}
+
+message ScreenshotCaptureResponse {
+  string catalog_uuid = 1;
+  oneof result {
+    ScreenshotData screenshot = 2;
+    string error_message = 3;
+  }
+}
+
+message ScreenshotData {
+  int32 frame_number_in_video = 1;
+  bytes screenshot = 2;
+}

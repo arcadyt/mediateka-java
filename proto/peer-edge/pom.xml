@@ -11,22 +11,16 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>peer-edge-proto</artifactId>
+    <artifactId>peer-edge</artifactId>
     <packaging>jar</packaging>
 
     <dependencies>
-        <!-- Protobuf Runtime -->
         <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>4.29.3</version>
+            <groupId>org.springframework.grpc</groupId>
+            <artifactId>spring-grpc-dependencies</artifactId>
+            <version>0.3.0</version>
+            <type>pom</type>
         </dependency>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java-util</artifactId>
-            <version>4.29.3</version>
-        </dependency>
-
         <!-- gRPC (optional, only if you generate gRPC stubs) -->
         <dependency>
             <groupId>io.grpc</groupId>
@@ -40,6 +34,18 @@
             <version>1.70.0</version>
             <scope>provided</scope> <!-- Provided, since gRPC logic is elsewhere -->
         </dependency>
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>1.3.2</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
