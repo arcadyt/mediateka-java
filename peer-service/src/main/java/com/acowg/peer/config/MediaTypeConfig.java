@@ -4,7 +4,6 @@ import com.acowg.shared.models.enums.MediaType;
 import com.google.common.collect.ImmutableMap;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 

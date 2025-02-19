@@ -16,7 +16,7 @@
         optimal file retrieval.
     </description>
     <dependencies>
-       <dependency>
+        <dependency>
             <groupId>org.springframework.grpc</groupId>
             <artifactId>spring-grpc-spring-boot-starter</artifactId>
             <version>0.3.0</version>
@@ -71,25 +71,25 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot-maven-plugin.version}</version>
             </plugin>
-<!--            &lt;!&ndash; Jib Maven Plugin for Docker &ndash;&gt;-->
-<!--            <plugin>-->
-<!--                <groupId>com.google.cloud.tools</groupId>-->
-<!--                <artifactId>jib-maven-plugin</artifactId>-->
-<!--                <version>${jib-maven-plugin.version}</version>-->
-<!--                <configuration>-->
-<!--                    <from>-->
-<!--                        <image>eclipse-temurin:20-jre</image>-->
-<!--                    </from>-->
-<!--                    <to>-->
-<!--                        <image>notification-management:latest</image>-->
-<!--                    </to>-->
-<!--                    <container>-->
-<!--                        <ports>-->
-<!--                            <port>8080</port>-->
-<!--                        </ports>-->
-<!--                    </container>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
+            <!--            &lt;!&ndash; Jib Maven Plugin for Docker &ndash;&gt;-->
+            <!--            <plugin>-->
+            <!--                <groupId>com.google.cloud.tools</groupId>-->
+            <!--                <artifactId>jib-maven-plugin</artifactId>-->
+            <!--                <version>${jib-maven-plugin.version}</version>-->
+            <!--                <configuration>-->
+            <!--                    <from>-->
+            <!--                        <image>eclipse-temurin:20-jre</image>-->
+            <!--                    </from>-->
+            <!--                    <to>-->
+            <!--                        <image>notification-management:latest</image>-->
+            <!--                    </to>-->
+            <!--                    <container>-->
+            <!--                        <ports>-->
+            <!--                            <port>8080</port>-->
+            <!--                        </ports>-->
+            <!--                    </container>-->
+            <!--                </configuration>-->
+            <!--            </plugin>-->
         </plugins>
     </build>
 </project>

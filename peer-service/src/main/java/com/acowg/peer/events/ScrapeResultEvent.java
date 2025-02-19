@@ -1,27 +1,23 @@
 package com.acowg.peer.events;
 
-import lombok.Getter;
+import com.acowg.shared.models.enums.CategoryType;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.springframework.context.ApplicationEvent;
 
-/**
- * Event representing the result of a scraping operation for a specific drive.
- */
-@Getter
+import java.util.Set;
+
+@Value
+@EqualsAndHashCode(callSuper = false)
 public class ScrapeResultEvent extends ApplicationEvent {
+    String categoryRoot;
+    CategoryType category;
+    Set<ScrapedFile> scrapedFiles;
 
-    private final String drive;
-    private final ScrapeResult scrapeResult;
-
-    /**
-     * Constructs a new ScrapeResultEvent.
-     *
-     * @param source       The source of the event (usually the ScraperService).
-     * @param drive        The drive identifier for which the scraping was performed.
-     * @param scrapeResult The result of the scraping operation, containing successful results and failed files.
-     */
-    public ScrapeResultEvent(Object source, String drive, ScrapeResult scrapeResult) {
+    public ScrapeResultEvent(Object source, String categoryRoot, CategoryType category, Set<ScrapedFile> scrapedFiles) {
         super(source);
-        this.drive = drive;
-        this.scrapeResult = scrapeResult;
+        this.categoryRoot = categoryRoot;
+        this.category = category;
+        this.scrapedFiles = scrapedFiles;
     }
 }
