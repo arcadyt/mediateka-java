@@ -2,19 +2,18 @@ package com.acowg.peer.entities;
 
 import com.acowg.shared.models.enums.CategoryType;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import org.hibernate.annotations.SoftDelete;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "category_catalog")
-@Getter
-@Setter
-@NoArgsConstructor
+@Table(name = "category")
+@Data
+@SoftDelete
 public class CategoryEntity {
     @Id
     @UuidGenerator
@@ -25,6 +24,13 @@ public class CategoryEntity {
     @Column(name = "category_type")
     private CategoryType categoryType;
 
-    @OneToMany(mappedBy = "categoryCatalog", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Set<CategoryRootEntity> categoryRoots = new HashSet<>();
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<DirectoryEntity> categoryRoots = new HashSet<>();
+
+    private LocalDateTime deletedAt;
+
+    @PreRemove
+    public void markAsDeleted() {
+        this.deletedAt = LocalDateTime.now();
+    }
 }

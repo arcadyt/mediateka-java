@@ -10,13 +10,13 @@ import java.util.Set;
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class ScrapeResultEvent extends ApplicationEvent {
-    String categoryRoot;
+    String baseDirectoryPath;
     CategoryType category;
     Set<ScrapedFile> scrapedFiles;
 
-    public ScrapeResultEvent(Object source, String categoryRoot, CategoryType category, Set<ScrapedFile> scrapedFiles) {
+    public ScrapeResultEvent(Object source, String baseDirectoryPath, CategoryType category, Set<ScrapedFile> scrapedFiles) {
         super(source);
-        this.categoryRoot = categoryRoot;
+        this.baseDirectoryPath = baseDirectoryPath;
         this.category = category;
         this.scrapedFiles = scrapedFiles;
     }
