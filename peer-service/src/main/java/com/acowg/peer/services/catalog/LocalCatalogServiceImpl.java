@@ -21,10 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -73,6 +70,11 @@ public class LocalCatalogServiceImpl implements ILocalCatalogService {
         );
 
         mediaRepository.saveAll(entities);
+    }
+
+    @Override
+    public Optional<MediaEntity> findByCatalogId(String catalogId) {
+        return mediaRepository.findByCatalogId(catalogId);
     }
 
     @Transactional

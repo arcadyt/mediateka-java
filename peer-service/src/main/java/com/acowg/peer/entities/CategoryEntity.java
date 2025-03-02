@@ -2,7 +2,7 @@ package com.acowg.peer.entities;
 
 import com.acowg.shared.models.enums.CategoryType;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Data;
 import org.hibernate.annotations.SoftDelete;
 import org.hibernate.annotations.UuidGenerator;
 

@@ -1,11 +1,15 @@
 package com.acowg.peer.grpc;
 
-import com.acowg.proto.peer_edge.PeerEdge.*;
+import com.acowg.peer.handlers.FileDeleteRequestHandler;
+import com.acowg.peer.handlers.FileHashRequestHandler;
+import com.acowg.peer.handlers.ScreenshotCaptureRequestHandler;
+import com.acowg.proto.peer_edge.PeerEdge;
 import com.acowg.proto.peer_edge.PeerEdgeServiceGrpc;
-import com.google.protobuf.ByteString;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,11 +22,19 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PeerEdgeClient {
 
+    private final PeerConfig peerConfig;
+    private final FileDeleteRequestHandler fileDeleteHandler;
+    private final FileHashRequestHandler fileHashHandler;
+    private final ScreenshotCaptureRequestHandler screenshotHandler;
+
     private ManagedChannel channel;
     private PeerEdgeServiceGrpc.PeerEdgeServiceStub peerEdgeServiceStub;
-    private StreamObserver<PeerMessage> clientStream;
+    private StreamObserver<PeerEdge.PeerMessage> clientStream;
 
-    public void initializeConnection(String edgeAddress) {
+    @PostConstruct
+    public void initializeConnection() {
+        String edgeAddress = peerConfig.getEdgeServiceAddress();
+
         // Create a channel to the edge service
         channel = ManagedChannelBuilder.forTarget(edgeAddress)
                 .usePlaintext() // For testing only; use TLS in production
@@ -34,103 +46,120 @@ public class PeerEdgeClient {
         // Initialize the bidirectional stream
         clientStream = peerEdgeServiceStub.message(new StreamObserver<>() {
             @Override
-            public void onNext(EdgeMessage message) {
+            public void onNext(PeerEdge.EdgeMessage message) {
                 String requestId = message.getRequestId();
-                if (message.hasRegistrationResponse()) {
-                    // Handle registration response
-                    PeerRegistrationResponse response = message.getRegistrationResponse();
-                    log.info("Received registration response: {}", response);
-                } else if (message.hasFileDeleteRequest()) {
-                    // Handle file deletion request
-                    FileDeleteRequest request = message.getFileDeleteRequest();
-                    log.info("Received file delete request: {}", request);
 
-                    // Process the request and send a response
-                    request.getCatalogUuidsList().forEach(catalogUuid -> {
-                        FileDeleteResponse response = FileDeleteResponse.newBuilder()
-                                .setCatalogUuid(catalogUuid)
-                                .setSuccess(true)
-                                .build();
-                        PeerMessage peerMessage = PeerMessage.newBuilder()
-                                .setRequestId(requestId)
-                                .setFileDeleteResponse(response)
-                                .build();
-                        clientStream.onNext(peerMessage);
-                    });
-                } else if (message.hasScreenshotCaptureRequest()) {
-                    // Handle screenshot capture request
-                    ScreenshotCaptureRequest request = message.getScreenshotCaptureRequest();
-                    log.info("Received screenshot capture request: {}", request);
+                try {
+                    if (message.hasRegistrationResponse()) {
+                        // Handle registration response
+                        PeerEdge.PeerRegistrationResponse response = message.getRegistrationResponse();
+                        log.info("Received registration response: {}", response);
 
-                    // Process the request and send a response
-                    ScreenshotCaptureResponse response = ScreenshotCaptureResponse.newBuilder()
-                            .setCatalogUuid(request.getCatalogUuid())
-                            .setScreenshot(ScreenshotData.newBuilder()
-                                    .setFrameNumberInVideo(1)
-                                    .setScreenshot(ByteString.copyFrom(new byte[1024])) // Example screenshot data
-                                    .build())
-                            .build();
-                    PeerMessage peerMessage = PeerMessage.newBuilder()
-                            .setRequestId(requestId)
-                            .setScreenshotCaptureResponse(response)
-                            .build();
-                    clientStream.onNext(peerMessage);
+                    } else if (message.hasFileDeleteRequest()) {
+                        // Handle file deletion request
+                        fileDeleteHandler.handleRequest(requestId, message.getFileDeleteRequest(), clientStream);
+
+                    } else if (message.hasFileHashRequest()) {
+                        // Handle file hash request
+                        fileHashHandler.handleRequest(requestId, message.getFileHashRequest(), clientStream);
+
+                    } else if (message.hasScreenshotCaptureRequest()) {
+                        // Handle screenshot capture request
+                        screenshotHandler.handleRequest(requestId, message.getScreenshotCaptureRequest(), clientStream);
+
+                    } else if (message.hasFileRemapRequest()) {
+                        // Handle file remap request if implemented
+                        log.warn("File remap request received but handler not implemented");
+
+                    } else if (message.hasFileOfferResponse()) {
+                        // Handle file offer response
+                        log.info("Received file offer response: {}", message.getFileOfferResponse());
+                    }
+                } catch (Exception e) {
+                    log.error("Error handling edge message: {}", e.getMessage(), e);
                 }
-                // Add more handlers as needed
             }
 
             @Override
             public void onError(Throwable t) {
                 log.error("Server stream error: {}", t.getMessage());
+                // Attempt to reconnect
+                scheduleReconnect();
             }
 
             @Override
             public void onCompleted() {
                 log.info("Server stream completed");
+                // Attempt to reconnect
+                scheduleReconnect();
             }
         });
 
         // Send a registration request
+        sendRegistrationRequest();
+    }
+
+    private void sendRegistrationRequest() {
         String requestId = UUID.randomUUID().toString();
-        PeerMessage request = PeerMessage.newBuilder()
+        PeerEdge.PeerMessage request = PeerEdge.PeerMessage.newBuilder()
                 .setRequestId(requestId)
-                .setRegistrationRequest(PeerRegistrationRequest.newBuilder()
-                        .setPeerName("peer-1")
+                .setRegistrationRequest(PeerEdge.PeerRegistrationRequest.newBuilder()
+                        .setPeerName(peerConfig.getPeerName())
                         .build())
                 .build();
         clientStream.onNext(request);
+        log.info("Sent registration request with ID: {}", requestId);
+    }
+
+    private void scheduleReconnect() {
+        // For simplicity, we'll just log the need to reconnect here
+        // In a real implementation, you'd use a scheduler to retry with exponential backoff
+        log.warn("Connection to edge service lost. Manual reconnection needed.");
     }
 
     // Example: Send a file offer request to the edge
-    public void sendFileOffer(String catalogUuid, String relativePath, long sizeBytes) {
+    public void sendFileOffer(String relativePath, long sizeBytes) {
         String requestId = UUID.randomUUID().toString();
-        PeerMessage request = PeerMessage.newBuilder()
+        PeerEdge.PeerMessage request = PeerEdge.PeerMessage.newBuilder()
                 .setRequestId(requestId)
-                .setFileOfferRequest(FileOfferRequest.newBuilder()
-                        .setPeerLuid("peer-1")
+                .setFileOfferRequest(PeerEdge.FileOfferRequest.newBuilder()
+                        .setPeerLuid(peerConfig.getPeerName())
                         .setRelativePath(relativePath)
                         .setSizeBytes(sizeBytes)
                         .build())
                 .build();
         clientStream.onNext(request);
+        log.info("Sent file offer for path: {}, size: {} bytes", relativePath, sizeBytes);
     }
 
-    // Example: Send a file hash response to the edge
+    // Example: Send a file hash response to the edge directly
     public void sendFileHashResponse(String catalogUuid, Map<String, String> hashes) {
         String requestId = UUID.randomUUID().toString();
-        PeerMessage request = PeerMessage.newBuilder()
+        PeerEdge.PeerMessage request = PeerEdge.PeerMessage.newBuilder()
                 .setRequestId(requestId)
-                .setFileHashResponse(FileHashResponse.newBuilder()
+                .setFileHashResponse(PeerEdge.FileHashResponse.newBuilder()
                         .setCatalogUuid(catalogUuid)
                         .putAllHashes(hashes)
                         .build())
                 .build();
         clientStream.onNext(request);
+        log.info("Sent file hash response for catalog UUID: {}", catalogUuid);
     }
 
+    @PreDestroy
     public void shutdown() {
+        if (clientStream != null) {
+            try {
+                clientStream.onCompleted();
+            } catch (Exception e) {
+                log.warn("Error completing client stream: {}", e.getMessage());
+            }
+        }
+
         if (channel != null) {
             channel.shutdown();
         }
+
+        log.info("PeerEdgeClient shut down");
     }
 }

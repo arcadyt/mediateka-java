@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public interface ILocalCatalogService {
@@ -25,6 +26,8 @@ public interface ILocalCatalogService {
     Page<HasMediaOfferingFields> findUnOfferedMedia(Pageable pageable);
 
     Set<String> findRegisteredMedia();
+
+    Optional<MediaEntity> findByCatalogId(String catalogId);
 
     void deleteByCategoryRootPathAndRelativeFilePathsNotIn(String categoryRootPath, Set<String> relativeFilePaths);
 
