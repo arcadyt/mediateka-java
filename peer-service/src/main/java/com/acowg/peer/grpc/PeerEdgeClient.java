@@ -1,5 +1,6 @@
 package com.acowg.peer.grpc;
 
+import com.acowg.peer.config.PeerConfig;
 import com.acowg.peer.handlers.FileDeleteRequestHandler;
 import com.acowg.peer.handlers.FileHashRequestHandler;
 import com.acowg.peer.handlers.ScreenshotCaptureRequestHandler;
