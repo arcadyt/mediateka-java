@@ -12,6 +12,8 @@ import org.mapstruct.ReportingPolicy;
         unmappedTargetPolicy = ReportingPolicy.IGNORE
 )
 public interface IScrapeResultMapper {
-    @Mapping(target = "baseDirectory", source = "directory")
+    @Mapping(target = "directory", source = "directory")
+    @Mapping(target = "relativeFilePath", source = "scrapedFile.relativeFilePath")
+    @Mapping(target = "sizeInBytes", source = "scrapedFile.sizeInBytes")
     MediaEntity toMediaEntity(ScrapedFile scrapedFile, DirectoryEntity directory);
 }

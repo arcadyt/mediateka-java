@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -52,9 +53,15 @@ public interface IMediaRepository extends JpaRepository<MediaEntity, String> {
             String directoryPath, Set<String> relativePaths);
 
     @Query("""
-            SELECT m.relativeFilePath
+        SELECT :relativePaths
+        WHERE NOT EXISTS (
+            SELECT 1
             FROM MediaEntity m
             WHERE m.directory.path = :directoryPath
-            """)
-    Set<String> findRelativeFilePathsByDirectoryPath(String directoryPath);
+            AND m.relativeFilePath IN :relativePaths
+        )
+        """)
+    Set<String> findMissingRelativeFilePathsByDirectoryPath(
+            @Param("directoryPath") String directoryPath,
+            @Param("relativePaths") Set<String> relativePaths);
 }

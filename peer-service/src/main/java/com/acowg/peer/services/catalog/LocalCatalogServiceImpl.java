@@ -120,13 +120,14 @@ public class LocalCatalogServiceImpl implements ILocalCatalogService {
         mediaRepository.deleteByBaseDirectoryPathAndRelativeFilePathsNotIn(
                 directory.getPath(), currentFilePaths);
 
-        // 4. Get existing files to avoid duplicates
-        Set<String> existingPaths = mediaRepository.findRelativeFilePathsByDirectoryPath(directory.getPath());
+        // 4. Get missing relative file paths (paths that are not in the database)
+        Set<String> missingPaths = mediaRepository.findMissingRelativeFilePathsByDirectoryPath(
+                directory.getPath(), currentFilePaths);
 
-        // 5. Add only new files
+        // 5. Add only new files (those that are missing in the database)
         Set<MediaEntity> newMediaEntities = event.getScrapedFiles().stream()
-                .filter(file -> !existingPaths.contains(file.relativeFilePath()))
-                .map(file -> scrapeResultMapper.toMediaEntity(file, directory))
+                .filter(file -> missingPaths.contains(file.relativeFilePath()))
+                .map(scrapedFile -> scrapeResultMapper.toMediaEntity(scrapedFile, directory))
                 .collect(Collectors.toSet());
 
         directory.getMediaFiles().addAll(newMediaEntities);
