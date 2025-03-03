@@ -3,12 +3,12 @@ package com.acowg.peer.services.scraping;
 import com.acowg.peer.config.PeerScrapingConfig;
 import com.acowg.peer.events.ScrapeResultEvent;
 import com.acowg.peer.events.ScrapedFile;
-import com.acowg.peer.services.locks.Drive;
-import com.acowg.peer.services.locks.RequiresDriveLock;
 import com.acowg.shared.models.enums.CategoryType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -26,6 +26,13 @@ public class MediaScraperServiceImpl implements IMediaScraperService {
     private final ApplicationEventPublisher eventPublisher;
     private final Executor taskExecutor;
 
+    /**
+     * Scheduled method to trigger media scraping at a fixed rate.
+     *
+     * @implNote Uses fixedRate to start the next execution regardless of the
+     *           previous execution's completion, with a configurable interval.
+     */
+    @Scheduled(fixedRateString = "#{${peer.scraping-frequency-minutes:30} * 60 * 1000}")
     @Override
     public void scrapeNow() {
         peerScrapingConfig.getDriveToCategories().forEach((drive, categoryToRootPaths) ->
@@ -37,20 +44,29 @@ public class MediaScraperServiceImpl implements IMediaScraperService {
         );
     }
 
-    @Override
-    @RequiresDriveLock
-    public void scanCategoryDirectory(CategoryType categoryType, @Drive File categoryRoot) {
-        Path categoryPath = categoryRoot.toPath();
-        log.info("Scanning category '{}' under path '{}'", categoryType, categoryPath);
+    /**
+     * Scans a directory for a specific category and publishes the results as an event.
+     *
+     * @param categoryType The category type to scan.
+     * @param categoryRoot The root directory of the category.
+     */
+    private void scanCategoryDirectory(CategoryType categoryType, File categoryRoot) {
+        try {
+            Path categoryPath = categoryRoot.toPath();
+            Set<ScrapedFile> scrapedFiles = fileScanner.scanDirectory(categoryPath);
 
-        Set<ScrapedFile> scrapedFiles = fileScanner.scanDirectory(categoryPath);
-        ScrapeResultEvent event = new ScrapeResultEvent(
-                this.getClass(),
-                categoryRoot.toString(),
-                categoryType,
-                scrapedFiles
-        );
+            ScrapeResultEvent event = new ScrapeResultEvent(
+                    this.getClass(),
+                    categoryRoot.toString(),
+                    categoryType,
+                    scrapedFiles
+            );
 
-        eventPublisher.publishEvent(event);
+            eventPublisher.publishEvent(event);
+
+            log.info("Completed scan for category: {} - Found {} files", categoryType, scrapedFiles.size());
+        } catch (Exception e) {
+            log.error("Error scanning category directory: {}", categoryType, e);
+        }
     }
 }

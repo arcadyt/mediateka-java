@@ -28,6 +28,7 @@ public class FileScannerImpl implements IFileScanner {
     @Override
     @RequiresDriveLock
     public Set<ScrapedFile> scanDirectory(@Drive Path root) {
+        log.info("Scanning under path '{}'", root);
         try (Stream<Path> stream = Files.walk(root)) {
             return stream.filter(Files::isRegularFile)
                     .filter(this::isSupportedMediaFile)
