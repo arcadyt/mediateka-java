@@ -6,11 +6,15 @@ import com.acowg.shared.models.enums.CategoryType;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+        componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE
+)
 public interface CategoryRootMapper {
 
-    @Mapping(target = "categoryRootPath", source = "categoryRoot")
+    @Mapping(target = "path", source = "categoryRoot")
     @Mapping(target = "category", source = "category", qualifiedByName = "mapCategory")
     DirectoryEntity fromEvent(String categoryRoot, CategoryType category);
 

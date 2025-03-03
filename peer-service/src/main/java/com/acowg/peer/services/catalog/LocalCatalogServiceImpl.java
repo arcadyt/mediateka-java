@@ -7,10 +7,11 @@ import com.acowg.peer.entities.MediaEntity;
 import com.acowg.peer.events.CatalogUpdateResult;
 import com.acowg.peer.events.ScrapeResultEvent;
 import com.acowg.peer.events.ScrapedFile;
-import com.acowg.peer.mappers.ScrapeResultMapper;
+import com.acowg.peer.mappers.IScrapeResultMapper;
 import com.acowg.peer.repositories.ICategoryRepository;
 import com.acowg.peer.repositories.IDirectoryRepository;
 import com.acowg.peer.repositories.IMediaRepository;
+import com.acowg.proto.peer_edge.PeerEdge;
 import com.acowg.shared.models.enums.CategoryType;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -30,7 +31,7 @@ public class LocalCatalogServiceImpl implements ILocalCatalogService {
     private final IMediaRepository mediaRepository;
     private final ICategoryRepository categoryRepository;
     private final IDirectoryRepository directoryRepository;
-    private final ScrapeResultMapper scrapeResultMapper;
+    private final IScrapeResultMapper scrapeResultMapper;
 
     @Transactional
     @Override
@@ -95,7 +96,7 @@ public class LocalCatalogServiceImpl implements ILocalCatalogService {
 
     @Override
     public Path getFullMediaPath(MediaEntity mediaFile) {
-        String directoryPath = mediaFile.getBaseDirectory().getPath();
+        String directoryPath = mediaFile.getDirectory().getPath();
         String relativeFilePath = mediaFile.getRelativeFilePath();
         return Paths.get(directoryPath, relativeFilePath);
     }
@@ -111,14 +112,16 @@ public class LocalCatalogServiceImpl implements ILocalCatalogService {
                 .map(ScrapedFile::relativeFilePath)
                 .collect(Collectors.toSet());
 
+        // 2.1. Query for catalog IDs of files that will be removed (using a single database query)
+        Set<String> removedCatalogIds = mediaRepository.findCatalogIdsByDirectoryPathAndRelativeFilePathsNotIn(
+                directory.getPath(), currentFilePaths);
+
         // 3. Delete files that no longer exist on disk
         mediaRepository.deleteByBaseDirectoryPathAndRelativeFilePathsNotIn(
                 directory.getPath(), currentFilePaths);
 
         // 4. Get existing files to avoid duplicates
-        Set<String> existingPaths = directory.getMediaFiles().stream()
-                .map(MediaEntity::getRelativeFilePath)
-                .collect(Collectors.toSet());
+        Set<String> existingPaths = mediaRepository.findRelativeFilePathsByDirectoryPath(directory.getPath());
 
         // 5. Add only new files
         Set<MediaEntity> newMediaEntities = event.getScrapedFiles().stream()
@@ -129,11 +132,16 @@ public class LocalCatalogServiceImpl implements ILocalCatalogService {
         directory.getMediaFiles().addAll(newMediaEntities);
         directoryRepository.save(directory);
 
-        // 6. Return the catalog update result (e.g., list of removed catalog IDs)
-        Set<String> removedCatalogIds = new HashSet<>();
-        // Logic to determine which catalog IDs were removed could go here
+        // 6. Create file offers for new media entities
+        Set<PeerEdge.FileOfferRequest> newMediaOffers = newMediaEntities.stream()
+                .map(m -> PeerEdge.FileOfferRequest.newBuilder()
+                        .setPeerLuid(m.getId())
+                        .setRelativePath(m.getRelativeFilePath())
+                        .setSizeBytes(m.getSizeInBytes())
+                        .build())
+                .collect(Collectors.toSet());
 
-        return new CatalogUpdateResult(removedCatalogIds);
+        return new CatalogUpdateResult(removedCatalogIds, newMediaOffers);
     }
 
     private DirectoryEntity getOrCreateDirectory(String path, CategoryType categoryType) {

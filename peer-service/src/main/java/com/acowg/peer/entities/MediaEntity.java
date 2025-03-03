@@ -10,16 +10,13 @@ import org.hibernate.annotations.UuidGenerator;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "media_file", indexes = {
-        @Index(name = "idx_catalog_id", columnList = "catalog_id")
-})
+@Table(name = "media_file")
 @Data
 @SoftDelete
 @SQLRestriction("deleted_at IS NULL")
 public class MediaEntity implements HasMediaOfferingFields {
     @Id
     @UuidGenerator
-    @Column(name = "id", updatable = false, nullable = false)
     private String id;
 
     @CreationTimestamp
@@ -36,7 +33,7 @@ public class MediaEntity implements HasMediaOfferingFields {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "directory_id")
-    private DirectoryEntity baseDirectory;
+    private DirectoryEntity directory;
 
     private LocalDateTime deletedAt;
 

@@ -3,6 +3,7 @@ package com.acowg.peer.services.scraping;
 import com.acowg.peer.config.PeerScrapingConfig;
 import com.acowg.peer.events.ScrapeResultEvent;
 import com.acowg.peer.events.ScrapedFile;
+import com.acowg.peer.services.locks.Drive;
 import com.acowg.peer.services.locks.RequiresDriveLock;
 import com.acowg.shared.models.enums.CategoryType;
 import lombok.RequiredArgsConstructor;
@@ -36,9 +37,9 @@ public class MediaScraperServiceImpl implements IMediaScraperService {
         );
     }
 
-    @RequiresDriveLock(pathParamName = "categoryRoot")
     @Override
-    public void scanCategoryDirectory(CategoryType categoryType, File categoryRoot) {
+    @RequiresDriveLock
+    public void scanCategoryDirectory(CategoryType categoryType, @Drive File categoryRoot) {
         Path categoryPath = categoryRoot.toPath();
         log.info("Scanning category '{}' under path '{}'", categoryType, categoryPath);
 

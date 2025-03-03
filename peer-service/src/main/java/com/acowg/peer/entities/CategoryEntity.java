@@ -17,7 +17,6 @@ import java.util.Set;
 public class CategoryEntity {
     @Id
     @UuidGenerator
-    @Column(name = "id", updatable = false, nullable = false)
     private String id;
 
     @Enumerated(EnumType.STRING)

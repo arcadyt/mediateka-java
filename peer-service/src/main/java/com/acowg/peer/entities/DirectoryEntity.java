@@ -1,5 +1,7 @@
 package com.acowg.peer.entities;
 
+import com.acowg.peer.entities.CategoryEntity;
+import com.acowg.peer.entities.MediaEntity;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.SQLRestriction;
@@ -11,15 +13,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "directory",
-        indexes = @Index(name = "idx_directory_path", columnList = "directory_path", unique = true))
+@Table(name = "directory")
 @Data
 @SoftDelete
 @SQLRestriction("deleted_at IS NULL")
 public class DirectoryEntity {
     @Id
     @UuidGenerator
-    @Column(name = "id", updatable = false, nullable = false)
     private String id;
 
     @Column(name = "directory_path", unique = true, nullable = false)

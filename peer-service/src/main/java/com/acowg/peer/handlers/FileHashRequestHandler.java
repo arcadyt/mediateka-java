@@ -3,6 +3,7 @@ package com.acowg.peer.handlers;
 import com.acowg.peer.entities.MediaEntity;
 import com.acowg.peer.repositories.IMediaRepository;
 import com.acowg.peer.services.catalog.ILocalCatalogService;
+import com.acowg.peer.services.locks.Drive;
 import com.acowg.peer.services.locks.RequiresDriveLock;
 import com.acowg.proto.peer_edge.PeerEdge;
 import io.grpc.stub.StreamObserver;
@@ -67,8 +68,8 @@ public class FileHashRequestHandler implements EdgeRequestHandler<PeerEdge.FileH
         }
     }
 
-    @RequiresDriveLock(pathParamName = "filePath")
-    private Map<String, String> calculateFileHashes(Path filePath, List<String> hashTypes) throws IOException {
+    @RequiresDriveLock
+    public Map<String, String> calculateFileHashes(@Drive Path filePath, List<String> hashTypes) throws IOException {
         Map<String, String> results = new HashMap<>();
 
         if (!Files.exists(filePath)) {

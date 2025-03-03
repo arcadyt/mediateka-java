@@ -1,5 +1,7 @@
 package com.acowg.peer.utils;
 
+import com.google.common.base.Strings;
+
 import java.nio.file.Path;
 
 /**
@@ -40,5 +42,22 @@ public class PathUtils {
 
         // Default: Return root `/` for Linux if no mount point is detected
         return rootStr;
+    }
+
+    /**
+     * Extracts file extension from relative file path.
+     *
+     * @param filePath Path of the file
+     * @return Lowercase file extension or null
+     */
+    public static String extractExtension(String filePath) {
+        if (Strings.isNullOrEmpty(filePath)) {
+            return null;
+        }
+
+        int lastDotIndex = filePath.lastIndexOf('.');
+        return (lastDotIndex > 0 && lastDotIndex < filePath.length() - 1)
+                ? filePath.substring(lastDotIndex + 1).toLowerCase()
+                : null;
     }
 }

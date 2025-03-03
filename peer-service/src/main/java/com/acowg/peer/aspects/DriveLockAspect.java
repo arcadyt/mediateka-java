@@ -1,7 +1,7 @@
 package com.acowg.peer.aspects;
 
+import com.acowg.peer.services.locks.Drive;
 import com.acowg.peer.services.locks.IDriveLockManager;
-import com.acowg.peer.services.locks.RequiresDriveLock;
 import com.acowg.peer.utils.PathUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.Semaphore;
-import java.util.stream.Collectors;
 
 @Aspect
 @Component
@@ -30,83 +29,33 @@ public class DriveLockAspect {
 
     @Around("@annotation(com.acowg.peer.services.locks.RequiresDriveLock)")
     public Object lockDrivesAroundExecution(ProceedingJoinPoint joinPoint) throws Throwable {
-        RequiresDriveLock annotation = extractAnnotation(joinPoint);
-        Set<String> drivesToLock = determineDrivesToLock(joinPoint, annotation);
-
+        Set<String> drivesToLock = findDriveParametersToLock(joinPoint);
         return executeWithLocks(joinPoint, drivesToLock);
     }
 
-    private RequiresDriveLock extractAnnotation(ProceedingJoinPoint joinPoint) {
+    private Set<String> findDriveParametersToLock(ProceedingJoinPoint joinPoint) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
-        return method.getAnnotation(RequiresDriveLock.class);
-    }
+        Parameter[] parameters = method.getParameters();
+        Object[] args = joinPoint.getArgs();
 
-    private Set<String> determineDrivesToLock(ProceedingJoinPoint joinPoint, RequiresDriveLock annotation) {
-        if (!annotation.driveParamName().isEmpty()) {
-            return extractDrivesFromParam(joinPoint, annotation.driveParamName());
-        } else {
-            return extractDrivesFromPaths(joinPoint, annotation.pathParamName());
-        }
-    }
-
-    private Set<String> extractDrivesFromParam(ProceedingJoinPoint joinPoint, String paramName) {
-        Object driveParam = findNamedParameter(joinPoint, paramName);
         Set<String> drives = new HashSet<>();
 
-        if (driveParam instanceof String) {
-            drives.add((String) driveParam);
-        } else if (driveParam instanceof Collection) {
-            ((Collection<?>) driveParam).forEach(drive -> {
-                if (drive instanceof String) {
-                    drives.add((String) drive);
+        for (int i = 0; i < parameters.length; i++) {
+            if (parameters[i].isAnnotationPresent(Drive.class)) {
+                Object arg = args[i];
+                try {
+                    Path path = convertToPath(arg);
+                    String drive = PathUtils.extractRootIdentifier(path);
+                    drives.add(drive);
+                } catch (IllegalArgumentException e) {
+                    log.warn("Couldn't extract drive from parameter: {}", arg);
                 }
-            });
+            }
         }
 
         validateDrives(drives);
         return drives;
-    }
-
-    private Set<String> extractDrivesFromPaths(ProceedingJoinPoint joinPoint, String paramName) {
-        Object pathParam = paramName.isEmpty()
-                ? findFirstPathParameter(joinPoint)
-                : findNamedParameter(joinPoint, paramName);
-
-        if (pathParam == null) {
-            throw new IllegalArgumentException("No valid path parameter found");
-        }
-
-        Set<String> drives;
-        if (pathParam instanceof Path || pathParam instanceof File || pathParam instanceof String) {
-            // Single path
-            Path path = convertToPath(pathParam);
-            drives = Collections.singleton(PathUtils.extractRootIdentifier(path));
-        } else if (pathParam instanceof Collection) {
-            // Collection of paths
-            drives = extractDrivesFromPathCollection((Collection<?>) pathParam);
-        } else {
-            drives = Collections.emptySet();
-        }
-
-        validateDrives(drives);
-        return drives;
-    }
-
-    private Set<String> extractDrivesFromPathCollection(Collection<?> paths) {
-        return paths.stream()
-                .filter(Objects::nonNull)
-                .map(item -> {
-                    try {
-                        Path path = convertToPath(item);
-                        return PathUtils.extractRootIdentifier(path);
-                    } catch (IllegalArgumentException e) {
-                        log.warn("Couldn't extract drive from collection item: {}", item);
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
     }
 
     private void validateDrives(Set<String> drives) {
@@ -146,38 +95,6 @@ public class DriveLockAspect {
         });
     }
 
-    private Object findNamedParameter(ProceedingJoinPoint joinPoint, String paramName) {
-        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        String[] parameterNames = signature.getParameterNames();
-        Object[] args = joinPoint.getArgs();
-
-        for (int i = 0; i < parameterNames.length; i++) {
-            if (parameterNames[i].equals(paramName)) {
-                return args[i];
-            }
-        }
-
-        throw new IllegalArgumentException("No parameter named '" + paramName + "' found");
-    }
-
-    private Object findFirstPathParameter(ProceedingJoinPoint joinPoint) {
-        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        Parameter[] parameters = signature.getMethod().getParameters();
-        Object[] args = joinPoint.getArgs();
-
-        for (int i = 0; i < parameters.length; i++) {
-            Class<?> type = parameters[i].getType();
-            if (Path.class.isAssignableFrom(type) ||
-                    File.class.isAssignableFrom(type) ||
-                    String.class.isAssignableFrom(type) ||
-                    Collection.class.isAssignableFrom(type)) {
-                return args[i];
-            }
-        }
-
-        return null;
-    }
-
     private Path convertToPath(Object obj) {
         if (obj instanceof Path) {
             return (Path) obj;
@@ -185,9 +102,15 @@ public class DriveLockAspect {
             return ((File) obj).toPath();
         } else if (obj instanceof String) {
             return Paths.get((String) obj);
-        } else {
-            throw new IllegalArgumentException(
-                    "Cannot convert parameter of type " + obj.getClass().getName() + " to Path");
+        } else if (obj instanceof Collection) {
+            // Handle collections - just use the first path element
+            Collection<?> collection = (Collection<?>) obj;
+            if (!collection.isEmpty()) {
+                return convertToPath(collection.iterator().next());
+            }
         }
+
+        throw new IllegalArgumentException(
+                "Cannot convert parameter of type " + obj.getClass().getName() + " to Path");
     }
 }
