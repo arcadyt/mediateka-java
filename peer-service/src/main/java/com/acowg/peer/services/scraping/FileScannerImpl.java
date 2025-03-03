@@ -30,8 +30,8 @@ public class FileScannerImpl implements IFileScanner {
     public Set<ScrapedFile> scanDirectory(@Drive Path root) {
         try (Stream<Path> stream = Files.walk(root)) {
             return stream.filter(Files::isRegularFile)
-                    .filter(this::isSupportedMediaFile) // Filter by supported extensions
-                    .map(this::toScrapedFile) // Convert directly to ScrapedFile
+                    .filter(this::isSupportedMediaFile)
+                    .map(this::toScrapedFile)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
         } catch (IOException e) {
@@ -51,7 +51,7 @@ public class FileScannerImpl implements IFileScanner {
             return new ScrapedFile(sizeInBytes, file.toString());
         } catch (IOException e) {
             log.error("Failed to retrieve file size for {}", file, e);
-            return null; // Will be filtered out in stream
+            return null;
         }
     }
 }

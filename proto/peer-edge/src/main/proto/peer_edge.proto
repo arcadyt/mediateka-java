@@ -12,7 +12,7 @@ message EdgeMessage {
     PeerRegistrationResponse registration_response = 2;
     FileDeleteRequest file_delete_request = 3;
     FileHashRequest file_hash_request = 4;
-    FileOfferResponse file_offer_response = 5;
+    BatchFileOfferResponse batch_file_offer_response = 5;
     FileRemapRequest file_remap_request = 6;
     ScreenshotCaptureRequest screenshot_capture_request = 7;
   }
@@ -24,7 +24,7 @@ message PeerMessage {
     PeerRegistrationRequest registration_request = 2;
     FileDeleteResponse file_delete_response = 3;
     FileHashResponse file_hash_response = 4;
-    FileOfferRequest file_offer_request = 5;
+    BatchFileOfferRequest batch_file_offer_request = 5;
     ScreenshotCaptureResponse screenshot_capture_response = 6;
   }
 }
@@ -61,13 +61,21 @@ message FileHashResponse {
   string error_message = 3;
 }
 
-message FileOfferRequest {
+message BatchFileOfferRequest {
+  repeated FileOfferItem files = 1;
+}
+
+message FileOfferItem {
   string peer_luid = 1;
   string relative_path = 2;
   int64 size_bytes = 3;
 }
 
-message FileOfferResponse {
+message BatchFileOfferResponse {
+  repeated FileOfferResult files = 1;
+}
+
+message FileOfferResult {
   string peer_luid = 1;
   string catalog_uuid = 2;
 }

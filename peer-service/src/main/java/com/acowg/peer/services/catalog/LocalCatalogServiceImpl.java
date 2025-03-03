@@ -132,16 +132,7 @@ public class LocalCatalogServiceImpl implements ILocalCatalogService {
         directory.getMediaFiles().addAll(newMediaEntities);
         directoryRepository.save(directory);
 
-        // 6. Create file offers for new media entities
-        Set<PeerEdge.FileOfferRequest> newMediaOffers = newMediaEntities.stream()
-                .map(m -> PeerEdge.FileOfferRequest.newBuilder()
-                        .setPeerLuid(m.getId())
-                        .setRelativePath(m.getRelativeFilePath())
-                        .setSizeBytes(m.getSizeInBytes())
-                        .build())
-                .collect(Collectors.toSet());
-
-        return new CatalogUpdateResult(removedCatalogIds, newMediaOffers);
+        return new CatalogUpdateResult(removedCatalogIds, newMediaEntities);
     }
 
     private DirectoryEntity getOrCreateDirectory(String path, CategoryType categoryType) {

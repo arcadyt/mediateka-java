@@ -1,0 +1,29 @@
+peer:
+  name: Peer1
+  scraping:
+    categories:
+      TV:
+        - /media/series
+        - /mnt/backup/series
+      MOVIES:
+        - /media/movies
+      TUTORIALS:
+        - /media/tutorials
+      WORKOUTS:
+        - /media/workouts
+      XRATED:
+        - /media/xyz
+
+media:
+  types:
+    video: mp4,mkv,avi
+    audio: mp3,flac,aac,wmv
+
+spring:
+  datasource:
+    url: jdbc:sqlite:your-database.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: org.hibernate.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update

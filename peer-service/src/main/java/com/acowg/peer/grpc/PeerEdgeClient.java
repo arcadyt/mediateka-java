@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -52,29 +54,23 @@ public class PeerEdgeClient {
 
                 try {
                     if (message.hasRegistrationResponse()) {
-                        // Handle registration response
                         PeerEdge.PeerRegistrationResponse response = message.getRegistrationResponse();
                         log.info("Received registration response: {}", response);
 
                     } else if (message.hasFileDeleteRequest()) {
-                        // Handle file deletion request
                         fileDeleteHandler.handleRequest(requestId, message.getFileDeleteRequest(), clientStream);
 
                     } else if (message.hasFileHashRequest()) {
-                        // Handle file hash request
                         fileHashHandler.handleRequest(requestId, message.getFileHashRequest(), clientStream);
 
                     } else if (message.hasScreenshotCaptureRequest()) {
-                        // Handle screenshot capture request
                         screenshotHandler.handleRequest(requestId, message.getScreenshotCaptureRequest(), clientStream);
 
                     } else if (message.hasFileRemapRequest()) {
-                        // Handle file remap request if implemented
                         log.warn("File remap request received but handler not implemented");
 
-                    } else if (message.hasFileOfferResponse()) {
-                        // Handle file offer response
-                        log.info("Received file offer response: {}", message.getFileOfferResponse());
+                    } else if (message.hasBatchFileOfferResponse()) {
+                        log.info("Received batch file offer response: {}", message.getBatchFileOfferResponse());
                     }
                 } catch (Exception e) {
                     log.error("Error handling edge message: {}", e.getMessage(), e);
@@ -84,19 +80,16 @@ public class PeerEdgeClient {
             @Override
             public void onError(Throwable t) {
                 log.error("Server stream error: {}", t.getMessage());
-                // Attempt to reconnect
                 scheduleReconnect();
             }
 
             @Override
             public void onCompleted() {
                 log.info("Server stream completed");
-                // Attempt to reconnect
                 scheduleReconnect();
             }
         });
 
-        // Send a registration request
         sendRegistrationRequest();
     }
 
@@ -113,24 +106,62 @@ public class PeerEdgeClient {
     }
 
     private void scheduleReconnect() {
-        // For simplicity, we'll just log the need to reconnect here
-        // In a real implementation, you'd use a scheduler to retry with exponential backoff
+        //todo - add logic here!
         log.warn("Connection to edge service lost. Manual reconnection needed.");
     }
 
-    // Example: Send a file offer request to the edge
-    public void sendFileOffer(String relativePath, long sizeBytes) {
+    public void sendBatchFileOffer(Set<PeerEdge.FileOfferItem> fileOfferItems) {
         String requestId = UUID.randomUUID().toString();
-        PeerEdge.PeerMessage request = PeerEdge.PeerMessage.newBuilder()
-                .setRequestId(requestId)
-                .setFileOfferRequest(PeerEdge.FileOfferRequest.newBuilder()
-                        .setPeerLuid(peerConfig.getPeerName())
-                        .setRelativePath(relativePath)
-                        .setSizeBytes(sizeBytes)
-                        .build())
+        PeerEdge.BatchFileOfferRequest batchRequest = PeerEdge.BatchFileOfferRequest.newBuilder()
+                .addAllFiles(fileOfferItems)
                 .build();
-        clientStream.onNext(request);
-        log.info("Sent file offer for path: {}, size: {} bytes", relativePath, sizeBytes);
+
+        PeerEdge.PeerMessage message = PeerEdge.PeerMessage.newBuilder()
+                .setRequestId(requestId)
+                .setBatchFileOfferRequest(batchRequest)
+                .build();
+
+        clientStream.onNext(message);
+        log.info("Sent batch file offer with {} items", fileOfferItems.size());
+    }
+
+    /**
+     * Sends a notification to the edge service about deleted files.
+     *
+     * @param deletedCatalogIds Catalog IDs that have been deleted from the peer
+     * @param requestId         Optional request ID for reactive mode, null for proactive mode
+     */
+    public void sendDeletedFilesNotification(Set<String> deletedCatalogIds, String requestId) {
+        if (deletedCatalogIds.isEmpty()) {
+            return;
+        }
+
+        String messageRequestId = Optional.ofNullable(requestId).orElseGet(() -> UUID.randomUUID().toString());
+
+        deletedCatalogIds.forEach(catalogId -> {
+            var response = PeerEdge.FileDeleteResponse.newBuilder()
+                    .setCatalogUuid(catalogId)
+                    .setSuccess(true)
+                    .build();
+
+            var message = PeerEdge.PeerMessage.newBuilder()
+                    .setRequestId(messageRequestId)
+                    .setFileDeleteResponse(response)
+                    .build();
+
+            clientStream.onNext(message);
+        });
+
+        log.info("Sent {} deletion notification for {} files",
+                requestId == null ? "proactive" : "reactive",
+                deletedCatalogIds.size());
+    }
+
+    /**
+     * Sends a proactive notification about deleted files.
+     */
+    public void sendDeletedFilesNotification(Set<String> deletedCatalogIds) {
+        sendDeletedFilesNotification(deletedCatalogIds, null);
     }
 
     // Example: Send a file hash response to the edge directly
