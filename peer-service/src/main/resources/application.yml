@@ -24,6 +24,6 @@ spring:
     url: jdbc:sqlite:your-database.db
     driver-class-name: org.sqlite.JDBC
   jpa:
-    database-platform: org.hibernate.dialect.SQLiteDialect
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
     hibernate:
       ddl-auto: update
