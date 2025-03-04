@@ -81,7 +81,7 @@ public class LocalCatalogServiceImpl implements ILocalCatalogService {
     @Transactional
     @Override
     public void deleteByCategoryRootPathAndRelativeFilePathsNotIn(String categoryRootPath, Set<String> relativeFilePaths) {
-        mediaRepository.deleteByBaseDirectoryPathAndRelativeFilePathsNotIn(categoryRootPath, relativeFilePaths);
+        mediaRepository.deleteByDirectoryPathAndRelativeFilePathsNotIn(categoryRootPath, relativeFilePaths);
     }
 
     @Override
@@ -117,7 +117,7 @@ public class LocalCatalogServiceImpl implements ILocalCatalogService {
                 directory.getPath(), currentFilePaths);
 
         // 3. Delete files that no longer exist on disk
-        mediaRepository.deleteByBaseDirectoryPathAndRelativeFilePathsNotIn(
+        mediaRepository.deleteByDirectoryPathAndRelativeFilePathsNotIn(
                 directory.getPath(), currentFilePaths);
 
         // 4. Get missing relative file paths (paths that are not in the database)

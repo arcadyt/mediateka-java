@@ -2,16 +2,29 @@ peer:
   name: Peer1
   scraping-frequency-minutes: 30
 
+edge:
+  address: 127.0.0.1:7000
+
 media:
   types:
-    video: mp4,mkv,avi
-    audio: mp3,flac,aac,wmv
+    video:
+    - mp4
+    - mkv
+    - avi
+    audio:
+    - mp3
+    - flac
+    - aac
+    - wmv
 
 spring:
   datasource:
     url: jdbc:sqlite:your-database.db
     driver-class-name: org.sqlite.JDBC
+    username: sa
+    password: sa
   jpa:
     database-platform: org.hibernate.community.dialect.SQLiteDialect
     hibernate:
       ddl-auto: update
+      show-sql: true

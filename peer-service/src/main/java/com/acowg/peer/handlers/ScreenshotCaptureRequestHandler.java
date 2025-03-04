@@ -23,6 +23,8 @@ public class ScreenshotCaptureRequestHandler implements EdgeRequestHandler<PeerE
     private final ILocalCatalogService localCatalogService;
     private final IMediaTypeResolver mediaTypeResolver;
     private final IScreenshotService screenshotService;
+
+
     private final Executor taskExecutor;
 
     @Override

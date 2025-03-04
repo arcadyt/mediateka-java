@@ -35,12 +35,10 @@ public interface IMediaRepository extends JpaRepository<MediaEntity, String> {
     Set<String> findAllCatalogIdNotNull();
 
     @Modifying
-    @Query("""
-            DELETE FROM MediaEntity m
-            WHERE m.baseDirectory.path = :baseDirectoryPath
-            AND m.relativeFilePath NOT IN :relativeFilePaths
-            """)
-    void deleteByBaseDirectoryPathAndRelativeFilePathsNotIn(String baseDirectoryPath, Set<String> relativeFilePaths);
+    @Query("DELETE FROM MediaEntity m WHERE m.directory.path = :directoryPath AND m.relativeFilePath NOT IN :relativeFilePaths")
+    void deleteByDirectoryPathAndRelativeFilePathsNotIn(
+            @Param("directoryPath") String directoryPath,
+            @Param("relativeFilePaths") Set<String> relativeFilePaths);
 
     @Query("""
             SELECT m.catalogId

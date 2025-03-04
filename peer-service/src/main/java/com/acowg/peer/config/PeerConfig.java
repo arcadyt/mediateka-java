@@ -11,6 +11,6 @@ public class PeerConfig {
     @Value("${peer.name}") // Inject peer name from configuration
     private String peerName;
 
-    @Value("${peer.edge.service.address}") // Inject edge service address from configuration
+    @Value("${edge.address}") // Inject edge service address from configuration
     private String edgeServiceAddress;
 }
