@@ -19,12 +19,15 @@ media:
 
 spring:
   datasource:
-    url: jdbc:sqlite:your-database.db
+    url: jdbc:sqlite:peer.db
     driver-class-name: org.sqlite.JDBC
     username: sa
     password: sa
   jpa:
     database-platform: org.hibernate.community.dialect.SQLiteDialect
+    properties:
+      hibernate:
+        use_sql_comments: false
     hibernate:
       ddl-auto: update
       show-sql: true

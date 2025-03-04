@@ -3,8 +3,6 @@ package com.acowg.peer.entities;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.SQLRestriction;
-import org.hibernate.annotations.SoftDelete;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
@@ -12,8 +10,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "media_file")
 @Data
-@SoftDelete
-@SQLRestriction("deleted_at IS NULL")
 public class MediaEntity implements HasMediaOfferingFields {
     @Id
     @UuidGenerator
@@ -34,11 +30,4 @@ public class MediaEntity implements HasMediaOfferingFields {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "directory_id")
     private DirectoryEntity directory;
-
-    private LocalDateTime deletedAt;
-
-    @PreRemove
-    public void markAsDeleted() {
-        this.deletedAt = LocalDateTime.now();
-    }
 }
