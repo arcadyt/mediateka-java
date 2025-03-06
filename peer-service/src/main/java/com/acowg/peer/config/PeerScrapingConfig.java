@@ -1,11 +1,10 @@
 package com.acowg.peer.config;
 
-import com.acowg.peer.entities.CategoryEntity;
-import com.acowg.peer.repositories.ICategoryRepository;
+import com.acowg.peer.entities.DirectoryEntity;
+import com.acowg.peer.repositories.IDirectoryRepository;
 import com.acowg.peer.utils.PathUtils;
 import com.acowg.shared.models.enums.CategoryType;
-import jakarta.annotation.PostConstruct;
-import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -14,48 +13,33 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Getter
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class PeerScrapingConfig {
+    private final IDirectoryRepository directoryRepository;
 
-    private final ICategoryRepository categoryRepository;
+    public record CategoryToRootPath(CategoryType category, File rootPath) {}
 
-    // Map of drive identifiers to a list of category-to-root-path mappings
-    private Map<String, List<CategoryToRootPath>> driveToCategories;
+    /**
+     * Gets the current mapping of drives to category-path pairs.
+     * Always returns fresh data from the database.
+     */
+    public Map<String, List<CategoryToRootPath>> getDriveToCategories() {
+        List<DirectoryEntity> directories = directoryRepository.findAll();
 
-    public PeerScrapingConfig(ICategoryRepository categoryRepository) {
-        this.categoryRepository = categoryRepository;
-    }
-
-    @PostConstruct
-    public void initialize() {
-        // Retrieve and filter active categories from the database
-        List<CategoryEntity> activeCategories = categoryRepository.findAll();
-
-        if (activeCategories.isEmpty()) {
-            log.warn("No active media categories found in the database!");
+        if (directories.isEmpty()) {
+            log.warn("No media directories found in the database!");
         }
 
-        // Build drive-to-categories mapping
-        driveToCategories = activeCategories.stream()
-                .flatMap(category -> category.getCategoryRoots().stream()
-                        .map(dir -> new CategoryToRootPath(category.getCategoryType(), new File(dir.getPath())))
-                )
+        Map<String, List<CategoryToRootPath>> mapping = directories.stream()
+                .map(dir -> new CategoryToRootPath(dir.getDefaultCategory(), new File(dir.getPath())))
                 .collect(Collectors.groupingBy(
                         entry -> PathUtils.extractRootIdentifier(entry.rootPath().toPath()),
                         Collectors.toUnmodifiableList()
                 ));
 
-        log.info("Drive to categories mapping initialized with {} drives", driveToCategories.size());
-        driveToCategories.forEach((drive, paths) ->
-                log.info("Drive {}: {} media roots", drive, paths.size())
-        );
-    }
-
-    /**
-     * Helper record to associate a category with its root path.
-     */
-    public record CategoryToRootPath(CategoryType category, File rootPath) {
+        log.debug("Drive to categories mapping has {} drives", mapping.size());
+        return mapping;
     }
 }

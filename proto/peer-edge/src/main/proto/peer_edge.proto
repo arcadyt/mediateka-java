@@ -63,6 +63,7 @@ message FileHashResponse {
 
 message BatchFileOfferRequest {
   repeated FileOfferItem files = 1;
+  string category_type = 2;
 }
 
 message FileOfferItem {

@@ -6,6 +6,7 @@ import com.acowg.peer.handlers.FileHashRequestHandler;
 import com.acowg.peer.handlers.ScreenshotCaptureRequestHandler;
 import com.acowg.proto.peer_edge.PeerEdge;
 import com.acowg.proto.peer_edge.PeerEdgeServiceGrpc;
+import com.acowg.shared.models.enums.CategoryType;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
@@ -110,9 +111,10 @@ public class PeerEdgeClient {
         log.warn("Connection to edge service lost. Manual reconnection needed.");
     }
 
-    public void sendBatchFileOffer(Set<PeerEdge.FileOfferItem> fileOfferItems) {
+    public void sendBatchFileOffer(CategoryType category, Set<PeerEdge.FileOfferItem> fileOfferItems) {
         String requestId = UUID.randomUUID().toString();
         PeerEdge.BatchFileOfferRequest batchRequest = PeerEdge.BatchFileOfferRequest.newBuilder()
+                .setCategoryType(category.toString())
                 .addAllFiles(fileOfferItems)
                 .build();
 

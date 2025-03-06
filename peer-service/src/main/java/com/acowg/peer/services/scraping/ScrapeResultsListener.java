@@ -23,7 +23,7 @@ public class ScrapeResultsListener implements ApplicationListener<ScrapeResultEv
     public void onApplicationEvent(@NonNull ScrapeResultEvent scrapeResult) {
         CatalogUpdateResult result = catalogService.createMissingAndDeleteObsoleteFiles(scrapeResult);
         var offerItems = mediaFileMapper.toFileOfferItems(result.newMediaOffers());
-        peerEdgeClient.sendBatchFileOffer(offerItems);
+        peerEdgeClient.sendBatchFileOffer(scrapeResult.getCategory(), offerItems);
 
         peerEdgeClient.sendDeletedFilesNotification(result.deletedCatalogIds());
 

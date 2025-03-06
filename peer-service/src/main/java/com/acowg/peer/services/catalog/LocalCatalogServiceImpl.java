@@ -1,6 +1,5 @@
 package com.acowg.peer.services.catalog;
 
-import com.acowg.peer.entities.CategoryEntity;
 import com.acowg.peer.entities.DirectoryEntity;
 import com.acowg.peer.entities.HasMediaOfferingFields;
 import com.acowg.peer.entities.MediaEntity;
@@ -8,10 +7,8 @@ import com.acowg.peer.events.CatalogUpdateResult;
 import com.acowg.peer.events.ScrapeResultEvent;
 import com.acowg.peer.events.ScrapedFile;
 import com.acowg.peer.mappers.IScrapeResultMapper;
-import com.acowg.peer.repositories.ICategoryRepository;
 import com.acowg.peer.repositories.IDirectoryRepository;
 import com.acowg.peer.repositories.IMediaRepository;
-import com.acowg.proto.peer_edge.PeerEdge;
 import com.acowg.shared.models.enums.CategoryType;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -29,7 +26,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class LocalCatalogServiceImpl implements ILocalCatalogService {
     private final IMediaRepository mediaRepository;
-    private final ICategoryRepository categoryRepository;
     private final IDirectoryRepository directoryRepository;
     private final IScrapeResultMapper scrapeResultMapper;
 
@@ -139,16 +135,9 @@ public class LocalCatalogServiceImpl implements ILocalCatalogService {
     private DirectoryEntity getOrCreateDirectory(String path, CategoryType categoryType) {
         return directoryRepository.findByPath(path)
                 .orElseGet(() -> {
-                    CategoryEntity category = categoryRepository.findByCategoryType(categoryType)
-                            .orElseGet(() -> {
-                                CategoryEntity newCategory = new CategoryEntity();
-                                newCategory.setCategoryType(categoryType);
-                                return categoryRepository.save(newCategory);
-                            });
-
                     DirectoryEntity newDirectory = new DirectoryEntity();
                     newDirectory.setPath(path);
-                    newDirectory.setCategory(category);
+                    newDirectory.setDefaultCategory(categoryType);
                     newDirectory.setMediaFiles(new HashSet<>());
                     return directoryRepository.save(newDirectory);
                 });

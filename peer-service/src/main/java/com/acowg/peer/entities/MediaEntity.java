@@ -8,7 +8,7 @@ import org.hibernate.annotations.UuidGenerator;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "media_file")
+@Table(name = "media_files")
 @Data
 public class MediaEntity implements HasMediaOfferingFields {
     @Id
