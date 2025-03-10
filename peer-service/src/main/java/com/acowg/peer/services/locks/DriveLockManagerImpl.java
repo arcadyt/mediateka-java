@@ -1,9 +1,11 @@
 package com.acowg.peer.services.locks;
 
-import com.acowg.peer.config.PeerScrapingConfig;
+import com.acowg.peer.config.ScrapingConfig;
+import com.acowg.peer.events.DirectoriesChangeEvent;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -18,7 +20,7 @@ import java.util.concurrent.Semaphore;
 public class DriveLockManagerImpl implements IDriveLockManager {
 
     private final Map<String, Semaphore> driveLocks = new HashMap<>();
-    private final PeerScrapingConfig peerScrapingConfig;
+    private final ScrapingConfig scrapingConfig;
 
     @Value("${peer.locks.per.drive:1}")
     private int locksPerDrive;
@@ -26,15 +28,19 @@ public class DriveLockManagerImpl implements IDriveLockManager {
     /**
      * Creates a DriveLockManager with configuration-based paths.
      *
-     * @param peerScrapingConfig Configuration containing media paths
+     * @param scrapingConfig Configuration containing media paths
      */
-    public DriveLockManagerImpl(PeerScrapingConfig peerScrapingConfig) {
-        this.peerScrapingConfig = peerScrapingConfig;
+    public DriveLockManagerImpl(ScrapingConfig scrapingConfig) {
+        this.scrapingConfig = scrapingConfig;
     }
 
     @PostConstruct
     public void initialize() {
-        peerScrapingConfig.getDriveToCategories().keySet().forEach(drive -> {
+        log.info("Initializing drive locks...");
+        // Clear existing locks first
+        driveLocks.clear();
+
+        scrapingConfig.getDriveToCategories().keySet().forEach(drive -> {
             driveLocks.put(drive, new Semaphore(locksPerDrive));
             log.info("Initialized {} locks for drive: {}", locksPerDrive, drive);
         });
@@ -43,5 +49,13 @@ public class DriveLockManagerImpl implements IDriveLockManager {
     @Override
     public Semaphore getLockForDrive(String driveLetter) {
         return driveLocks.get(driveLetter);
+    }
+
+    @EventListener
+    public void handleDirectoriesChangeEvent(DirectoriesChangeEvent event) {
+        log.info("Directory change detected ({}): {}. Reinitializing drive locks.",
+                event.getChangeType(),
+                event.getDirectory().getPath());
+        initialize();
     }
 }

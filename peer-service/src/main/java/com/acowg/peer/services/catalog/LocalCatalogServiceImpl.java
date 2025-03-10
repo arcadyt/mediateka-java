@@ -10,6 +10,7 @@ import com.acowg.peer.mappers.IScrapeResultMapper;
 import com.acowg.peer.repositories.IDirectoryRepository;
 import com.acowg.peer.repositories.IMediaRepository;
 import com.acowg.shared.models.enums.CategoryType;
+import com.google.common.collect.Sets;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -112,22 +113,25 @@ public class LocalCatalogServiceImpl implements ILocalCatalogService {
         Set<String> removedCatalogIds = mediaRepository.findCatalogIdsByDirectoryPathAndRelativeFilePathsNotIn(
                 directory.getPath(), currentFilePaths);
 
-        // 3. Delete files that no longer exist on disk
-        mediaRepository.deleteByDirectoryPathAndRelativeFilePathsNotIn(
-                directory.getPath(), currentFilePaths);
+        // 3. Delete files that no longer exist on disk (only if we found some)
+        if (!removedCatalogIds.isEmpty()) {
+            mediaRepository.deleteByDirectoryPathAndRelativeFilePathsNotIn(
+                    directory.getPath(), currentFilePaths);
+        }
 
-        // 4. Get missing relative file paths (paths that are not in the database)
-        Set<String> missingPaths = mediaRepository.findMissingRelativeFilePathsByDirectoryPath(
-                directory.getPath(), currentFilePaths);
+        // 4. Get ALL existing paths in the database for this directory
+        Set<String> allExistingPaths = mediaRepository.findRelativePathsByDirectoryPath(directory.getPath());
 
-        // 5. Add only new files (those that are missing in the database)
+        // 5. Calculate truly missing paths (those that don't exist in the database at all)
+        Set<String> missingPaths = Sets.difference(currentFilePaths, allExistingPaths);
+
+        // 6. Add only new files (those that are missing in the database)
         Set<MediaEntity> newMediaEntities = event.getScrapedFiles().stream()
                 .filter(file -> missingPaths.contains(file.relativeFilePath()))
                 .map(scrapedFile -> scrapeResultMapper.toMediaEntity(scrapedFile, directory))
                 .collect(Collectors.toSet());
 
-        directory.getMediaFiles().addAll(newMediaEntities);
-        directoryRepository.save(directory);
+        mediaRepository.saveAll(newMediaEntities);
 
         return new CatalogUpdateResult(removedCatalogIds, newMediaEntities);
     }

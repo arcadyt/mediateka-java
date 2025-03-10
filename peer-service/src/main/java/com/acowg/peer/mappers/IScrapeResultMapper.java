@@ -15,5 +15,6 @@ public interface IScrapeResultMapper {
     @Mapping(target = "directory", source = "directory")
     @Mapping(target = "relativeFilePath", source = "scrapedFile.relativeFilePath")
     @Mapping(target = "sizeInBytes", source = "scrapedFile.sizeInBytes")
+    @Mapping(target = "id", ignore = true)
     MediaEntity toMediaEntity(ScrapedFile scrapedFile, DirectoryEntity directory);
 }

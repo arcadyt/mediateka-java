@@ -32,7 +32,7 @@ public class FileScannerImpl implements IFileScanner {
         try (Stream<Path> stream = Files.walk(root)) {
             return stream.filter(Files::isRegularFile)
                     .filter(this::isSupportedMediaFile)
-                    .map(this::toScrapedFile)
+                    .map(filePath->this.toScrapedFile(root, filePath))
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
         } catch (IOException e) {
@@ -46,12 +46,12 @@ public class FileScannerImpl implements IFileScanner {
         return mediaTypeConfig.getExtensionToMediaType().containsKey(extension);
     }
 
-    private ScrapedFile toScrapedFile(Path file) {
+    private ScrapedFile toScrapedFile(Path root, Path filePath) {
         try {
-            int sizeInBytes = (int) Files.size(file);
-            return new ScrapedFile(sizeInBytes, file.toString());
+            long sizeInBytes = (int) Files.size(filePath);
+            return new ScrapedFile(sizeInBytes, root.relativize(filePath).toString());
         } catch (IOException e) {
-            log.error("Failed to retrieve file size for {}", file, e);
+            log.error("Failed to retrieve file size for {}", filePath, e);
             return null;
         }
     }

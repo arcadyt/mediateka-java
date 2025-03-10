@@ -1,12 +1,11 @@
 package com.acowg.peer.services.scraping;
 
-import com.acowg.peer.config.PeerScrapingConfig;
+import com.acowg.peer.config.ScrapingConfig;
 import com.acowg.peer.events.ScrapeResultEvent;
 import com.acowg.peer.events.ScrapedFile;
 import com.acowg.shared.models.enums.CategoryType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -21,7 +20,7 @@ import java.util.concurrent.Executor;
 @RequiredArgsConstructor
 public class MediaScraperServiceImpl implements IMediaScraperService {
 
-    private final PeerScrapingConfig peerScrapingConfig;
+    private final ScrapingConfig scrapingConfig;
     private final IFileScanner fileScanner;
     private final ApplicationEventPublisher eventPublisher;
     private final Executor taskExecutor;
@@ -35,7 +34,7 @@ public class MediaScraperServiceImpl implements IMediaScraperService {
     @Scheduled(fixedRateString = "#{${peer.scraping-frequency-minutes:30} * 60 * 1000}")
     @Override
     public void scrapeNow() {
-        peerScrapingConfig.getDriveToCategories().forEach((drive, categoryToRootPaths) ->
+        scrapingConfig.getDriveToCategories().forEach((drive, categoryToRootPaths) ->
                 categoryToRootPaths.forEach(categoryToRootPath ->
                         taskExecutor.execute(() ->
                                 scanCategoryDirectory(categoryToRootPath.category(), categoryToRootPath.rootPath())

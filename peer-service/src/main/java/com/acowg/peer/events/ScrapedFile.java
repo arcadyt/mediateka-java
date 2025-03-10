@@ -1,4 +1,4 @@
 package com.acowg.peer.events;
 
-public record ScrapedFile(int sizeInBytes, String relativeFilePath) {
+public record ScrapedFile(long sizeInBytes, String relativeFilePath) {
 }

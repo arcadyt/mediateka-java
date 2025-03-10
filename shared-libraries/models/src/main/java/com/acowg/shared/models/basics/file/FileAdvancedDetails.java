@@ -26,7 +26,7 @@ public class FileAdvancedDetails implements HasFileId {
      * The size of the file in bytes. Must be zero or positive.
      */
     @PositiveOrZero
-    private int sizeInBytes;
+    private long sizeInBytes;
 
     /**
      * The duration of the file in seconds. Must be zero or positive.

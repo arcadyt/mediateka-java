@@ -25,9 +25,9 @@ public class MediaEntity implements HasMediaOfferingFields {
     private String relativeFilePath;
 
     @Column(name = "size_in_bytes")
-    private int sizeInBytes;
+    private long sizeInBytes;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "directory_id")
     private DirectoryEntity directory;
 }

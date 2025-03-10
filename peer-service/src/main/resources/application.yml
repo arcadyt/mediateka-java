@@ -1,6 +1,6 @@
 peer:
   name: Peer1
-  scraping-frequency-minutes: 30
+  scraping-frequency-minutes: 1
 
 edge:
   address: 127.0.0.1:7000
