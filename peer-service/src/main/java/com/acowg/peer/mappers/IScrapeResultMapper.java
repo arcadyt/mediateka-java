@@ -7,6 +7,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
+import java.time.LocalDateTime;
+
 @Mapper(
         componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE
@@ -16,5 +18,5 @@ public interface IScrapeResultMapper {
     @Mapping(target = "relativeFilePath", source = "scrapedFile.relativeFilePath")
     @Mapping(target = "sizeInBytes", source = "scrapedFile.sizeInBytes")
     @Mapping(target = "id", ignore = true)
-    MediaEntity toMediaEntity(ScrapedFile scrapedFile, DirectoryEntity directory);
+    MediaEntity toMediaEntity(ScrapedFile scrapedFile, DirectoryEntity directory, LocalDateTime createdAt);
 }

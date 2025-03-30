@@ -21,17 +21,14 @@ public class MediaController {
     private final MediaService mediaService;
 
     @GetMapping
-    public List<MediaDto> getAllMedia(
-            @RequestParam(value = "slim", defaultValue = "false") boolean slim) {
-        return mediaService.getAllMedia(slim);
+    public List<MediaDto> getAllMedia() {
+        return mediaService.getAllMedia();
     }
 
     @GetMapping("/{id}")
-    public MediaDto getMediaById(
-            @PathVariable String id,
-            @RequestParam(value = "slim", defaultValue = "false") boolean slim) {
+    public MediaDto getMediaById(@PathVariable(name = "id") String id) {
         try {
-            return mediaService.getMediaById(id, slim);
+            return mediaService.getMediaById(id);
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
@@ -45,7 +42,7 @@ public class MediaController {
 
     @PutMapping("/{id}")
     public MediaDto updateMedia(
-            @PathVariable String id,
+            @PathVariable(name = "id") String id,
             @RequestBody MediaDto mediaDto) {
         try {
             return mediaService.updateMedia(id, mediaDto);
@@ -55,7 +52,7 @@ public class MediaController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteMedia(@PathVariable String id) {
+    public ResponseEntity<Void> deleteMedia(@PathVariable(name = "id") String id) {
         try {
             mediaService.deleteMedia(id);
             return ResponseEntity.noContent().build();
@@ -65,18 +62,14 @@ public class MediaController {
     }
 
     @GetMapping("/uncataloged")
-    public Page<MediaDto> getUncatalogedMedia(
-            Pageable pageable,
-            @RequestParam(value = "slim", defaultValue = "false") boolean slim) {
-        return mediaService.getMediaWithoutCatalogId(pageable, slim);
+    public Page<MediaDto> getUncatalogedMedia(Pageable pageable) {
+        return mediaService.getMediaWithoutCatalogId(pageable);
     }
 
     @GetMapping("/catalogId/{catalogId}")
-    public MediaDto getMediaByCatalogId(
-            @PathVariable String catalogId,
-            @RequestParam(value = "slim", defaultValue = "false") boolean slim) {
+    public MediaDto getMediaByCatalogId(@PathVariable(name = "catalogId") String catalogId) {
         try {
-            return mediaService.getMediaByCatalogId(catalogId, slim);
+            return mediaService.getMediaByCatalogId(catalogId);
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
@@ -88,7 +81,7 @@ public class MediaController {
     }
 
     @DeleteMapping("/catalogId/{catalogId}")
-    public ResponseEntity<Void> deleteMediaByCatalogId(@PathVariable String catalogId) {
+    public ResponseEntity<Void> deleteMediaByCatalogId(@PathVariable(name = "catalogId") String catalogId) {
         mediaService.deleteByCatalogId(catalogId);
         return ResponseEntity.noContent().build();
     }

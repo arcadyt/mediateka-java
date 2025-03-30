@@ -10,12 +10,15 @@ import com.acowg.peer.repositories.IDirectoryRepository;
 import com.acowg.peer.repositories.IMediaRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DirectoryService {
@@ -24,27 +27,22 @@ public class DirectoryService {
     private final IDirectoryMapper directoryMapper;
     private final IMediaMapper mediaMapper;
 
-    public List<DirectoryDto> getAllDirectories(boolean slim) {
+    @Transactional(readOnly = true)
+    public List<DirectoryDto> getAllDirectories() {
         List<DirectoryEntity> directories = directoryRepository.findAll();
-        return slim ?
-                directoryMapper.toSlimDtoList(directories) :
-                directoryMapper.toDtoList(directories);
+        return directoryMapper.toDtoList(directories);
     }
 
-    public DirectoryDto getDirectoryById(String id, boolean slim) {
+    @Transactional(readOnly = true)
+    public DirectoryDto getDirectoryById(String id) {
         DirectoryEntity directory = directoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Directory not found with id: " + id));
-
-        return slim ?
-                directoryMapper.toSlimDto(directory) :
-                directoryMapper.toDto(directory);
+        return directoryMapper.toDto(directory);
     }
 
-    public Optional<DirectoryDto> findDirectoryById(String id, boolean slim) {
+    public Optional<DirectoryDto> findDirectoryById(String id) {
         return directoryRepository.findById(id)
-                .map(entity -> slim ?
-                        directoryMapper.toSlimDto(entity) :
-                        directoryMapper.toDto(entity));
+                .map(directoryMapper::toDto);
     }
 
     @Transactional
@@ -68,17 +66,32 @@ public class DirectoryService {
 
     @Transactional
     public void deleteDirectory(String id) {
-        DirectoryEntity entity = directoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Directory not found with id: " + id));
-
+        if (!directoryRepository.existsById(id)) {
+            throw new EntityNotFoundException("Directory not found with id: " + id);
+        }
         directoryRepository.deleteById(id);
     }
 
+    /**
+     * Get media files for a directory using the repository method directly
+     */
+    @Transactional(readOnly = true)
     public List<MediaDto> getMediaByDirectoryId(String id) {
-        DirectoryEntity directory = directoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Directory not found with id: " + id));
+        // Verify directory exists first
+        if (!directoryRepository.existsById(id)) {
+            throw new EntityNotFoundException("Directory not found with id: " + id);
+        }
 
-        List<MediaEntity> mediaEntities = mediaRepository.findByDirectoryId(id);
-        return mediaMapper.toDtoList(mediaEntities);
+        try {
+            // Use the repository method directly
+            List<MediaEntity> mediaList = mediaRepository.findByDirectoryId(id);
+
+            // Map to DTOs
+            return mediaMapper.toDtoList(mediaList);
+        } catch (Exception e) {
+            log.error("Error retrieving media for directory {}: {}", id, e.getMessage());
+            // Return empty list instead of throwing error
+            return new ArrayList<>();
+        }
     }
 }

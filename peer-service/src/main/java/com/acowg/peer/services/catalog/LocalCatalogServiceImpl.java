@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -126,9 +127,10 @@ public class LocalCatalogServiceImpl implements ILocalCatalogService {
         Set<String> missingPaths = Sets.difference(currentFilePaths, allExistingPaths);
 
         // 6. Add only new files (those that are missing in the database)
+        LocalDateTime timestamp = LocalDateTime.now();
         Set<MediaEntity> newMediaEntities = event.getScrapedFiles().stream()
                 .filter(file -> missingPaths.contains(file.relativeFilePath()))
-                .map(scrapedFile -> scrapeResultMapper.toMediaEntity(scrapedFile, directory))
+                .map(scrapedFile -> scrapeResultMapper.toMediaEntity(scrapedFile, directory, timestamp))
                 .collect(Collectors.toSet());
 
         mediaRepository.saveAll(newMediaEntities);

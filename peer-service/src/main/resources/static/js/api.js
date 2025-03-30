@@ -17,6 +17,22 @@ const API = (function() {
             });
         },
 
+        // Get media for a specific directory
+        getDirectoryMedia: function(directoryId) {
+            return $.ajax({
+                url: `${BASE_URL}/directories/${directoryId}/media`,
+                method: 'GET'
+            });
+        },
+
+        // Get a specific entity by path
+        getFromPath: function(path) {
+            return $.ajax({
+                url: `${BASE_URL}/${path}`,
+                method: 'GET'
+            });
+        },
+
         // Get available category types
         getCategoryTypes: function() {
             return $.ajax({
@@ -35,7 +51,7 @@ const API = (function() {
             });
         },
 
-        // Get related entities
+        // Get related entities by URL (for HATEOAS links)
         getRelatedEntities: function(url) {
             return $.ajax({
                 url: url,

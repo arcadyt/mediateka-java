@@ -2,6 +2,9 @@ package com.acowg.peer.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import org.apache.commons.lang3.builder.HashCodeExclude;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -27,6 +30,8 @@ public class MediaEntity implements HasMediaOfferingFields {
     @Column(name = "size_in_bytes")
     private long sizeInBytes;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "directory_id")
     private DirectoryEntity directory;

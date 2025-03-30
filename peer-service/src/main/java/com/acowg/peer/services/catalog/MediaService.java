@@ -24,27 +24,24 @@ public class MediaService {
     private final IMediaRepository mediaRepository;
     private final IMediaMapper mediaMapper;
 
-    public List<MediaDto> getAllMedia(boolean slim) {
+    @Transactional(readOnly = true)
+    public List<MediaDto> getAllMedia() {
         List<MediaEntity> mediaEntities = mediaRepository.findAll();
-        return slim ? 
-                mediaMapper.toSlimDtoList(mediaEntities) : 
-                mediaMapper.toDtoList(mediaEntities);
+        return mediaMapper.toDtoList(mediaEntities);
     }
 
-    public MediaDto getMediaById(String id, boolean slim) {
+    @Transactional(readOnly = true)
+    public MediaDto getMediaById(String id) {
         MediaEntity mediaEntity = mediaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Media not found with id: " + id));
-        
-        return slim ? 
-                mediaMapper.toSlimDto(mediaEntity) : 
-                mediaMapper.toDto(mediaEntity);
+
+        return mediaMapper.toDto(mediaEntity);
     }
 
-    public Optional<MediaDto> findMediaById(String id, boolean slim) {
+    @Transactional(readOnly = true)
+    public Optional<MediaDto> findMediaById(String id) {
         return mediaRepository.findById(id)
-                .map(entity -> slim ? 
-                        mediaMapper.toSlimDto(entity) : 
-                        mediaMapper.toDto(entity));
+                .map(mediaMapper::toDto);
     }
 
     @Transactional
@@ -59,7 +56,7 @@ public class MediaService {
         if (!mediaRepository.existsById(id)) {
             throw new EntityNotFoundException("Media not found with id: " + id);
         }
-        
+
         MediaEntity entity = mediaMapper.toEntity(mediaDto);
         entity.setId(id);
         MediaEntity savedEntity = mediaRepository.save(entity);
@@ -71,42 +68,37 @@ public class MediaService {
         if (!mediaRepository.existsById(id)) {
             throw new EntityNotFoundException("Media not found with id: " + id);
         }
-        
+
         mediaRepository.deleteById(id);
     }
 
-    public Page<MediaDto> getMediaWithoutCatalogId(Pageable pageable, boolean slim) {
+    @Transactional(readOnly = true)
+    public Page<MediaDto> getMediaWithoutCatalogId(Pageable pageable) {
         Page<HasMediaOfferingFields> mediaPage = mediaRepository.findByCatalogIdIsNull(pageable);
-        
+
         List<MediaDto> mediaDtos = mediaPage.getContent().stream()
                 .filter(field -> field instanceof MediaEntity)
-                .map(field -> {
-                    MediaEntity entity = (MediaEntity) field;
-                    return slim ? 
-                            mediaMapper.toSlimDto(entity) : 
-                            mediaMapper.toDto(entity);
-                })
+                .map(field -> mediaMapper.toDto((MediaEntity) field))
                 .collect(Collectors.toList());
-        
+
         return new PageImpl<>(mediaDtos, pageable, mediaPage.getTotalElements());
     }
 
-    public MediaDto getMediaByCatalogId(String catalogId, boolean slim) {
+    @Transactional(readOnly = true)
+    public MediaDto getMediaByCatalogId(String catalogId) {
         MediaEntity mediaEntity = mediaRepository.findByCatalogId(catalogId)
                 .orElseThrow(() -> new EntityNotFoundException("Media not found with catalog id: " + catalogId));
-        
-        return slim ? 
-                mediaMapper.toSlimDto(mediaEntity) : 
-                mediaMapper.toDto(mediaEntity);
+
+        return mediaMapper.toDto(mediaEntity);
     }
 
-    public Optional<MediaDto> findMediaByCatalogId(String catalogId, boolean slim) {
+    @Transactional(readOnly = true)
+    public Optional<MediaDto> findMediaByCatalogId(String catalogId) {
         return mediaRepository.findByCatalogId(catalogId)
-                .map(entity -> slim ? 
-                        mediaMapper.toSlimDto(entity) : 
-                        mediaMapper.toDto(entity));
+                .map(mediaMapper::toDto);
     }
 
+    @Transactional(readOnly = true)
     public Set<String> getRegisteredMediaCatalogIds() {
         return mediaRepository.findAllCatalogIdNotNull();
     }

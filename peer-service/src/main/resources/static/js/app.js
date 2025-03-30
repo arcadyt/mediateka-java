@@ -10,7 +10,6 @@ $(document).ready(function() {
     };
 
     setupNav('#nav-directories', 'directory');
-    setupNav('#nav-categories', 'directory'); // Redirect to directories
     setupNav('#nav-media', 'media');
 
     // Set up add entity button

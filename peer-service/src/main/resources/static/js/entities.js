@@ -10,17 +10,18 @@ const EntityManager = (function() {
         'media': 'media'
     };
 
-    // Entity type to embedded resource mapping
-    const embeddedResourceMap = {
-        'directory': 'directoryEntities',
-        'media': 'mediaEntities'
+    // Utility functions
+    const getEntityId = entity => {
+        if (!entity) return null;
+        // For directories returned directly from the controller (not HATEOAS format)
+        if (entity.id) return entity.id;
+        // For HATEOAS links (if they exist)
+        return _.get(entity, '_links.self.href', '').split('/').pop() || entity.id;
     };
 
-    // Utility functions
-    const getEntityId = entity =>
-        _.get(entity, '_links.self.href', '').split('/').pop() || entity.id;
-
     const getEntityDisplayName = entity => {
+        if (!entity) return 'Unknown';
+
         const typeMap = {
             'directory': 'path',
             'media': 'relativeFilePath'
@@ -65,9 +66,24 @@ const EntityManager = (function() {
 
             API.getEntities(entityType)
                 .done(data => {
-                    // Use the correct embedded resource name
-                    const resourceName = embeddedResourceMap[entityType];
-                    const entities = _.get(data, `_embedded.${resourceName}`, []);
+                    // Handle both array responses and HATEOAS embedded responses
+                    let entities;
+
+                    if (Array.isArray(data)) {
+                        // Direct array response from controller
+                        entities = data;
+                    } else {
+                        // Try to extract from HATEOAS _embedded structure if present
+                        const resourceKey = entityType === 'directory' ? 'directoryEntities' : 'mediaEntities';
+                        entities = _.get(data, `_embedded.${resourceKey}`, []);
+
+                        // If not found with the specific key, try more general approach
+                        if (entities.length === 0) {
+                            const pluralType = getPluralizedType(entityType);
+                            entities = _.get(data, `_embedded.${pluralType}`, []);
+                        }
+                    }
+
                     this.displayEntities(entities);
                 })
                 .fail(xhr => {
@@ -94,12 +110,14 @@ const EntityManager = (function() {
 
             const htmlItems = _.map(entities, entity => {
                 const displayName = getEntityDisplayName(entity);
+                const id = getEntityId(entity);
+
                 // For directories, also show the category type
                 const categoryInfo = currentEntityType === 'directory' && entity.defaultCategory ?
                     ` <span class="badge bg-secondary">${entity.defaultCategory}</span>` : '';
 
                 return `
-                    <div class="list-group-item" data-id="${getEntityId(entity)}" data-entity='${_.escape(JSON.stringify(entity))}'>
+                    <div class="list-group-item" data-id="${id}" data-entity='${_.escape(JSON.stringify(entity))}'>
                         ${displayName}${categoryInfo}
                     </div>
                 `;
@@ -127,60 +145,68 @@ const EntityManager = (function() {
 
         // Load related entities
         loadRelatedEntities: function(entity) {
-            const relationConfig = {
-                'directory': { type: 'Media Files', linkPath: '_links.mediaFiles.href' },
-                'media': { type: 'Directory', linkPath: '_links.directory.href' }
-            };
-
-            const config = relationConfig[currentEntityType];
-            const relatedType = config.type;
-            const url = _.get(entity, config.linkPath);
-
-            $('#related-entities-header').text(relatedType);
-
-            if (!url) {
+            if (!entity) {
                 $('#related-entities').html(`
                     <div class="list-group-item text-center text-muted">
-                        No related ${relatedType.toLowerCase()} available
+                        No related entities available
                     </div>
                 `);
                 return;
             }
 
-            $('#related-entities').html(`
-                <div class="list-group-item text-center text-muted">
-                    Loading related ${relatedType.toLowerCase()}...
-                </div>
-            `);
+            const id = getEntityId(entity);
 
-            API.getRelatedEntities(url)
-                .done(data => {
-                    this.displayRelatedEntities(data, relatedType);
-                })
-                .fail(xhr => {
+            if (!id) {
+                $('#related-entities').html(`
+                    <div class="list-group-item text-center text-muted">
+                        Cannot determine entity ID
+                    </div>
+                `);
+                return;
+            }
+
+            const relatedType = currentEntityType === 'directory' ? 'Media Files' : 'Directory';
+            $('#related-entities-header').text(relatedType);
+
+            // For directories, load related media using the proper endpoint
+            if (currentEntityType === 'directory') {
+                $('#related-entities').html(`
+                    <div class="list-group-item text-center text-muted">
+                        Loading related media files...
+                    </div>
+                `);
+
+                API.getDirectoryMedia(id)
+                    .done(data => {
+                        this.displayRelatedEntities(data, relatedType);
+                    })
+                    .fail(xhr => {
+                        $('#related-entities').html(`
+                            <div class="list-group-item text-center text-danger">
+                                Error loading related media files: ${xhr.status} ${xhr.statusText}
+                            </div>
+                        `);
+                    });
+            } else {
+                // For media, show directory information directly if available
+                if (entity.directory) {
+                    this.displayRelatedEntities([entity.directory], "Directory");
+                } else {
                     $('#related-entities').html(`
-                        <div class="list-group-item text-center text-danger">
-                            Error loading related ${relatedType.toLowerCase()}: ${xhr.status} ${xhr.statusText}
+                        <div class="list-group-item text-center text-muted">
+                            No directory information available
                         </div>
                     `);
-                });
+                }
+            }
         },
 
         // Display related entities
         displayRelatedEntities: function(data, relatedType) {
-            const singularType = _.endsWith(relatedType.toLowerCase(), 's')
-                ? _.trimEnd(relatedType.toLowerCase(), 's')
-                : relatedType.toLowerCase();
+            // Handle both array responses and single entity
+            const entities = Array.isArray(data) ? data : [data];
 
-            const pluralType = _.endsWith(relatedType.toLowerCase(), 's')
-                ? relatedType.toLowerCase()
-                : relatedType.toLowerCase() + 's';
-
-            const entities = _.get(data, ['_embedded', pluralType]) ||
-                             _.get(data, ['_embedded', singularType]) ||
-                             [data];
-
-            if (_.isEmpty(entities)) {
+            if (_.isEmpty(entities) || entities[0] === null) {
                 $('#related-entities').html(`
                     <div class="list-group-item text-center text-muted">
                         No related ${relatedType.toLowerCase()} found
@@ -189,8 +215,7 @@ const EntityManager = (function() {
                 return;
             }
 
-            const entitiesList = _.isArray(entities) ? entities : [entities];
-            const html = _.map(entitiesList, entity => {
+            const html = _.map(entities, entity => {
                 const displayName = entity.relativeFilePath || entity.path || 'Unnamed';
                 return `
                     <div class="list-group-item">
